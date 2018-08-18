@@ -29,18 +29,27 @@ class CarBrand(scrapy.Item):
     brandFirstWord = scrapy.Field()
     brandName = scrapy.Field()
     brandLogo = scrapy.Field()
+    autoHomeId = scrapy.Field()
 
 
 # 车型
 class CarType(scrapy.Item):
+    autoHomeId = scrapy.Field()
     brandId = scrapy.Field()
     brandName = scrapy.Field()
     typeName = scrapy.Field()
     name = scrapy.Field()
-    guidePrice = scrapy.Field()
+    maxPrice = scrapy.Field()
+    minPrice = scrapy.Field()
     stopPro = scrapy.Field()
-    imageStoreUrl = scrapy.Field()
     image = scrapy.Field()
+
+# 高低配 具体型号
+class CarModel(scrapy.Item):
+    category = scrapy.Field()
+    name = scrapy.Field()
+    guidePrice = scrapy.Field()
+    realityPrice = scrapy.Field()
 
 # class CarItem(scrapy.Item):
 #     carName = scrapy.Field()
