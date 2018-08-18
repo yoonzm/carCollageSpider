@@ -7,12 +7,6 @@ import scrapy
 from tutorial import carService
 from tutorial.items import CarBrand, CarType
 
-def format_wan(num):
-    return format(float(num)/float(10000),'.2f')
-
-def format_price(min, max):
-    return str(format_wan(min)) + '-' + str(format_wan(max)) + '万'
-
 class CarSpider(scrapy.Spider):
     name = 'car'
     allowed_domains = ['autohome.com.cn']
@@ -59,28 +53,56 @@ class CarSpider(scrapy.Spider):
         sellTypes = json.loads(response.body)['result']['sellSeries']
         allTypes = json.loads(response.body)['result']['allSellSeries']
 
+        # 所有
         for type_item in allTypes:
             items = type_item['SeriesItems']
             for item in items:
-                save_car_type(car_brand, type_item, item, True)
+                self.save_car_type(car_brand, type_item, item, True)
 
+        # 在售
         for type_item in sellTypes:
             items = type_item['SeriesItems']
             for item in items:
-                save_car_type(car_brand, type_item, item, False)
+                self.save_car_type(car_brand, type_item, item, False)
 
-def save_car_type(car_brand, type_item, item, stop_pro):
-    car_type = CarType()
-    car_type['brandId'] = car_brand.id
-    car_type['brandName'] = car_brand.get('brandName')
+    # 保存车型
+    def save_car_type(self, car_brand, type_item, item, stop_pro):
+        car_type = CarType()
+        car_type['brandId'] = car_brand.id
+        car_type['brandName'] = car_brand.get('brandName')
 
-    car_type['typeName'] = type_item['name']
+        car_type['typeName'] = type_item['name']
 
-    car_type['autoHomeId'] = item['id']
-    car_type['name'] = item['name']
-    car_type['maxPrice'] = item['maxprice']
-    car_type['minPrice'] = item['minprice']
-    car_type['image'] = 'https:' + item['seriesPicUrl']
-    car_type['stopPro'] = stop_pro
+        car_type['autoHomeId'] = item['id']
+        car_type['name'] = item['name']
+        car_type['maxPrice'] = item['maxprice']
+        car_type['minPrice'] = item['minprice']
+        car_type['image'] = 'https:' + item['seriesPicUrl']
+        car_type['stopPro'] = stop_pro
 
-    carService.save_car_type(car_type)
+        car_type_model = carService.save_car_type(car_type)
+
+        request = scrapy.Request(
+            'https://m.autohome.com.cn/' + car_type['autoHomeId'] + '/#pvareaid=103224',
+            callback=self.parse_car_model)
+        request.meta['car_type'] = car_type_model
+        yield request
+
+
+    def parse_car_model(self, response):
+        car_type = response.meta['car_type']
+
+        models = response.xpath('//div[@class="summary-cartype"]/div')[0]
+
+        categorys = models.xpath('div[contains(@class, "category")]/text()').extract()
+        lists = models.xpath('ul')
+
+        for index in range(len(categorys)):
+            for item in lists[index]:
+                category = categorys[index]
+                name = lists[index].xpath('li/a/text()').extract_first()
+                id = lists[index].xpath('li/@data-modelid').extract_first()
+                guide = lists[index].xpath('li/div(@class="price")/span(@class="guide")/strong/text()').extract_first()
+                reality = lists[index].xpath('li/div(@class="price")/span(@class="reality")/strong/text()').extract_first()
+
+        print '-------------------------------', categorys
