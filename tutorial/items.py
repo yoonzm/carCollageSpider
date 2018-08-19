@@ -26,10 +26,13 @@ class DmozItem(scrapy.Item):
 
 # 品牌
 class CarBrand(scrapy.Item):
+    objectId = scrapy.Field()
     brandFirstWord = scrapy.Field()
     brandName = scrapy.Field()
     brandLogo = scrapy.Field()
     autoHomeId = scrapy.Field()
+    sellTypeCount = scrapy.Field()
+    allTypeCount = scrapy.Field()
 
 
 # 车型
@@ -44,11 +47,17 @@ class CarType(scrapy.Item):
     stopPro = scrapy.Field()
     image = scrapy.Field()
 
+
 # 高低配 具体型号
 class CarModel(scrapy.Item):
+    autoHomeId = scrapy.Field()
+    brandId = scrapy.Field()
+    typeId = scrapy.Field()
     category = scrapy.Field()
     name = scrapy.Field()
+    # 厂家指导价
     guidePrice = scrapy.Field()
+    # 参考价
     realityPrice = scrapy.Field()
 
 # class CarItem(scrapy.Item):

@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 import json
-from multiprocessing.dummy import dict
-
 import scrapy
+from scrapy import Request
 
 from tutorial import carService
-from tutorial.items import CarBrand, CarType
+from tutorial.items import CarBrand, CarType, CarModel
+
 
 class CarSpider(scrapy.Spider):
     name = 'car'
@@ -15,7 +15,7 @@ class CarSpider(scrapy.Spider):
 
     def start_requests(self):
         # 每次启动前先删除
-        carService.delete_all()
+        # carService.delete_all()
 
         pages = []
         for i in range(97, 123):
@@ -40,7 +40,7 @@ class CarSpider(scrapy.Spider):
             # # 保存至远程数据库<carBrand>
             car_brand_model = carService.save_car_brand(car_brand)
 
-            request = scrapy.Request(
+            request = Request(
                 'https://car.m.autohome.com.cn/ashx/GetSeriesByBrandId.ashx?r=6s&b=' + car_brand['autoHomeId'],
                 callback=self.parse_car_type)
             request.meta['car_brand'] = car_brand_model
@@ -53,17 +53,26 @@ class CarSpider(scrapy.Spider):
         sellTypes = json.loads(response.body)['result']['sellSeries']
         allTypes = json.loads(response.body)['result']['allSellSeries']
 
+        # 更新brand type 数量
+        update_car_brand = CarBrand()
+        update_car_brand['objectId'] = car_brand.id
+
+        # TODO 在所有的中过滤并标记出在售的
         # 所有
         for type_item in allTypes:
             items = type_item['SeriesItems']
             for item in items:
-                self.save_car_type(car_brand, type_item, item, True)
+                update_car_brand['sellTypeCount'] = len(item)
+                yield self.save_car_type(car_brand, type_item, item, True)
 
         # 在售
         for type_item in sellTypes:
             items = type_item['SeriesItems']
             for item in items:
-                self.save_car_type(car_brand, type_item, item, False)
+                update_car_brand['allTypeCount'] = len(item)
+                yield self.save_car_type(car_brand, type_item, item, False)
+
+        carService.update_car_brand(update_car_brand)
 
     # 保存车型
     def save_car_type(self, car_brand, type_item, item, stop_pro):
@@ -82,13 +91,13 @@ class CarSpider(scrapy.Spider):
 
         car_type_model = carService.save_car_type(car_type)
 
-        request = scrapy.Request(
-            'https://m.autohome.com.cn/' + car_type['autoHomeId'] + '/#pvareaid=103224',
+        request = Request(
+            'https://m.autohome.com.cn/' + str(car_type['autoHomeId']) + '/#pvareaid=103224',
             callback=self.parse_car_model)
         request.meta['car_type'] = car_type_model
-        yield request
+        return request
 
-
+    # 各个配置
     def parse_car_model(self, response):
         car_type = response.meta['car_type']
 
@@ -97,12 +106,22 @@ class CarSpider(scrapy.Spider):
         categorys = models.xpath('div[contains(@class, "category")]/text()').extract()
         lists = models.xpath('ul')
 
-        for index in range(len(categorys)):
-            for item in lists[index]:
-                category = categorys[index]
-                name = lists[index].xpath('li/a/text()').extract_first()
-                id = lists[index].xpath('li/@data-modelid').extract_first()
-                guide = lists[index].xpath('li/div(@class="price")/span(@class="guide")/strong/text()').extract_first()
-                reality = lists[index].xpath('li/div(@class="price")/span(@class="reality")/strong/text()').extract_first()
+        print '长度对比', len(categorys), len(lists)
 
-        print '-------------------------------', categorys
+        for index in range(len(categorys)):
+            for item in lists:
+                car_model = CarModel()
+                car_model['autoHomeId'] = item.xpath('li/@data-modelid').extract_first()
+                car_model['brandId'] = car_type.get('brandId')
+                car_model['typeId'] = car_type.id
+                car_model['category'] = categorys[index]
+                car_model['name'] = item.xpath('li/a/text()').extract_first()
+                price_sel = item.xpath('li/div[@class="price"]')
+                car_model['guidePrice'] = price_sel.xpath(
+                    'span[@class="guide"]/strong/text()').extract_first()
+                car_model['realityPrice'] = price_sel.xpath(
+                    'span[@class="reality"]/strong/text()').extract_first()
+
+                car_model_model = carService.save_car_model(car_model)
+
+        # print '-------------------------------', categorys

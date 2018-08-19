@@ -6,7 +6,7 @@ import leancloud
 
 from tutorial import carService
 
-leancloud.init("Guv8NmYGL7M0xjass3x4Afzi-gzGzoHsz", "zbmTkdFb5AIGLvSeWUc3O72W")
+leancloud.init("PoEFEdhonbMbSMhFOtbqXmvJ-gzGzoHsz", "QyRhWm4N0W0UOfalewKC3Kns")
 
 
 class MydomainSpider(scrapy.Spider):
@@ -19,12 +19,12 @@ class MydomainSpider(scrapy.Spider):
     def parse(self, response):
         self.log('A response from %s just arrived!' % response.url)
 
-        carService.delete_all()
-        # TestObject = leancloud.Object.extend('TestObject')
-        # test_object = TestObject()
-        # test_object.set('words', "Hello World!")
-        # test_object.save()
-        # self.parse2('', test_object)
+        # carService.delete_all()
+        TestObject = leancloud.Object.extend('TestObject')
+        test_object = TestObject()
+        test_object.set('words', "Hello World!")
+        test_object.save()
+        self.parse2('', test_object)
 
         # TestObject = leancloud.Object.extend('TestObject')
         # query = leancloud.Query(TestObject)
