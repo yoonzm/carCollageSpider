@@ -36,7 +36,7 @@ def save_car_type(model):
     car_type.set('maxPrice', model['maxPrice'])
     car_type.set('minPrice', model['minPrice'])
     car_type.set('image', model['image'])
-    car_type.set('stopPro', model['stopPro'])
+    car_type.set('onSale', model['onSale'])
     car_type.save()
     return car_type
 
@@ -46,7 +46,9 @@ def save_car_model(model):
     car_model = CarModel()
     car_model.set('autoHomeId', model['autoHomeId'])
     car_model.set('brandId', model['brandId'])
+    car_model.set('brandName', model['brandName'])
     car_model.set('typeId', model['typeId'])
+    car_model.set('typeName', model['typeName'])
     car_model.set('category', model['category'])
     car_model.set('name', model['name'])
     car_model.set('guidePrice', model['guidePrice'])

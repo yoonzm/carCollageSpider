@@ -15,7 +15,7 @@ class CarSpider(scrapy.Spider):
 
     def start_requests(self):
         # 每次启动前先删除
-        # carService.delete_all()
+        carService.delete_all()
 
         pages = []
         for i in range(97, 123):
@@ -56,26 +56,34 @@ class CarSpider(scrapy.Spider):
         # 更新brand type 数量
         update_car_brand = CarBrand()
         update_car_brand['objectId'] = car_brand.id
+        sell_type_count = 0
+        all_type_count = 0
+
+        # 在售
+        sellAutoHomeIds = []  # 记录在售的ids
+        for type_item in sellTypes:
+            items = type_item['SeriesItems']
+            sell_type_count += len(items)
+            for item in items:
+                sellAutoHomeIds.append(item['id'])
+
+                print '-------------------------sellAutoHomeIds', sellAutoHomeIds
 
         # TODO 在所有的中过滤并标记出在售的
         # 所有
         for type_item in allTypes:
             items = type_item['SeriesItems']
+            all_type_count += len(items)
             for item in items:
-                update_car_brand['sellTypeCount'] = len(item)
-                yield self.save_car_type(car_brand, type_item, item, True)
+                on_sale = sellAutoHomeIds.count(item['id']) != 0
+                yield self.save_car_type(car_brand, type_item, item, on_sale)
 
-        # 在售
-        for type_item in sellTypes:
-            items = type_item['SeriesItems']
-            for item in items:
-                update_car_brand['allTypeCount'] = len(item)
-                yield self.save_car_type(car_brand, type_item, item, False)
-
+        update_car_brand['sellTypeCount'] = sell_type_count
+        update_car_brand['allTypeCount'] = all_type_count
         carService.update_car_brand(update_car_brand)
 
     # 保存车型
-    def save_car_type(self, car_brand, type_item, item, stop_pro):
+    def save_car_type(self, car_brand, type_item, item, on_sale):
         car_type = CarType()
         car_type['brandId'] = car_brand.id
         car_type['brandName'] = car_brand.get('brandName')
@@ -87,7 +95,7 @@ class CarSpider(scrapy.Spider):
         car_type['maxPrice'] = item['maxprice']
         car_type['minPrice'] = item['minprice']
         car_type['image'] = 'https:' + item['seriesPicUrl']
-        car_type['stopPro'] = stop_pro
+        car_type['onSale'] = on_sale
 
         car_type_model = carService.save_car_type(car_type)
 
@@ -113,7 +121,9 @@ class CarSpider(scrapy.Spider):
                 car_model = CarModel()
                 car_model['autoHomeId'] = item.xpath('li/@data-modelid').extract_first()
                 car_model['brandId'] = car_type.get('brandId')
+                car_model['brandName'] = car_type.get('brandName')
                 car_model['typeId'] = car_type.id
+                car_model['typeName'] = car_type.get('typeName')
                 car_model['category'] = categorys[index]
                 car_model['name'] = item.xpath('li/a/text()').extract_first()
                 price_sel = item.xpath('li/div[@class="price"]')

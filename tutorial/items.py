@@ -44,7 +44,7 @@ class CarType(scrapy.Item):
     name = scrapy.Field()
     maxPrice = scrapy.Field()
     minPrice = scrapy.Field()
-    stopPro = scrapy.Field()
+    onSale = scrapy.Field()
     image = scrapy.Field()
 
 
@@ -52,7 +52,9 @@ class CarType(scrapy.Item):
 class CarModel(scrapy.Item):
     autoHomeId = scrapy.Field()
     brandId = scrapy.Field()
+    brandName = scrapy.Field()
     typeId = scrapy.Field()
+    typeName = scrapy.Field()
     category = scrapy.Field()
     name = scrapy.Field()
     # 厂家指导价
