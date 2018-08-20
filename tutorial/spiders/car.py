@@ -117,16 +117,16 @@ class CarSpider(scrapy.Spider):
         print '长度对比', len(categorys), len(lists)
 
         for index in range(len(categorys)):
-            for item in lists:
+            for item in lists[index].xpath('li'):
                 car_model = CarModel()
-                car_model['autoHomeId'] = item.xpath('li/@data-modelid').extract_first()
+                car_model['autoHomeId'] = item.xpath('@data-modelid').extract_first()
                 car_model['brandId'] = car_type.get('brandId')
                 car_model['brandName'] = car_type.get('brandName')
                 car_model['typeId'] = car_type.id
                 car_model['typeName'] = car_type.get('typeName')
                 car_model['category'] = categorys[index]
-                car_model['name'] = item.xpath('li/a/text()').extract_first()
-                price_sel = item.xpath('li/div[@class="price"]')
+                car_model['name'] = item.xpath('a/text()').extract_first()
+                price_sel = item.xpath('div[@class="price"]')
                 car_model['guidePrice'] = price_sel.xpath(
                     'span[@class="guide"]/strong/text()').extract_first()
                 car_model['realityPrice'] = price_sel.xpath(
